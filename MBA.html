@@ -1,0 +1,285 @@
+<!DOCTYPE HTML>
+<!--
+	Massively by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Market Basket Analysis with SQL</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper" class="fade-in">
+
+				<!-- Header -->
+					<header id="header">
+						<a href="index.html" class="logo">Thanh Cong</a>
+					</header>
+
+				<!-- Nav -->
+					<nav id="nav">
+						<ul class="links">
+							<li><a href="index.html">About me</a></li>
+							<li class="active"><a href="projects.html">Projects</a></li>
+							<!-- <li><a href="elements.html">Elements Reference</a></li> -->
+						</ul>
+						<ul class="icons">
+							<li><a href="https://www.linkedin.com/in/thanh-cong-vuong/" class="icon brands alt fa-linkedin"><span class="label">Linkedin</span></a></li>
+							<li><a href="https://www.kaggle.com/vthcong" class="icon brands alt fa-kaggle"><span class="label">Kaggle</span></a></li>
+							<li><a href="https://github.com/vthcong" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
+						</ul>
+					</nav>
+
+				<!-- Main -->
+					<div id="main">
+
+						<!-- Post -->
+							<section class="post">
+								<ul class="actions special" style = "margin-top: -100px;
+																	margin-left: -530px;">
+									<li><a href="projects.html" class="button">Back</a></li>
+								</ul>
+								<header class="major">
+									<h1>Market Basket Analysis with SQL</h1>
+								</header>
+
+								<!-- Text stuff -->
+									<h2>Overview</h2>
+									<p> Market Basket Analysis (or in short: MBA) is a technique using analytics to explore customer purchase behaviors, thus retailers can efficiently employ purchase information to effectively market and optimize sales of diverse products. MBA goes with several other names such as Product Association or Product Recommendation and is one of the most popular and best applications of machine learning, looking for the products that frequently go with each other in purchases. <br /><br />
+										For example, if a customer buys a pair of pants, how likely are they going to buy a shirt on the same trip? How likely is a customer going to buy a drink following a purchase of a sandwich? This analysis stands at the forefront in the retail industry to solve such cases to make better recommendations for customers, which has been applied widely in such as: cinemas, fast food restaurants, clothing shops.
+									</p>
+									
+									<hr />
+									<h2>MBA with AdventureWorks2019 database</h2>
+									<p>To better understand how MBA works, let’s look at the following demonstration in Microsoft SQL Server 2019 on AdventureWorks2019 database, specifically <b>FactInternetSales</b> table with two attributes: <em>SalesOrderNumber</em> and <em>ProductKey</em>.
+									</p>
+									<h3>Description</h3>
+											<ul>
+												<li><b>FactInternetSales</b> table: Sales record through internet channel</li>
+												<ol>
+													<li><em>SalesOrderNumber</em>: The code indentifies the order</li>
+													<li><em>ProductKey</em>: The code indentifies the product</li>
+												</ol>
+											</ul>
+									<pre><code>SELECT TOP 10 -- see the first 10 rows of the table
+	SalesOrderNumber,
+	ProductKey
+FROM FactInternetSales;
+</code></pre>							
+									
+									<hr />
+									<h3>1. Select the orders having at least two different products</h3>
+									<pre><code>SELECT
+	SalesOrderNumber,
+	COUNT(ProductKey) AS NumberofProducts
+FROM FactInternetSales
+GROUP BY SalesOrderNumber
+HAVING COUNT(ProductKey) >= 2;
+</code></pre>
+									<p style = "margin-bottom: 10px;">We have the following result:</p>
+									<img src="images/my/MBA/num_larger than 2.png" 
+											style="width:400px;
+													height:300px;
+													margin-left: 450px;"/>
+									<hr>
+									<h3>2. List out the SalesOrderNumber and ProductKey of orders having at least two product keys</h3>
+									<pre><code>SELECT
+	OrderList.SalesOrderNumber,
+	FIS.ProductKey
+FROM
+	(SELECT
+		SalesOrderNumber,
+		COUNT(ProductKey) AS NumberofProducts
+	FROM FactInternetSales
+	GROUP BY SalesOrderNumber
+	HAVING COUNT(ProductKey) >= 2) AS OrderList
+JOIN FactInternetSales AS FIS ON Orderlist.SalesOrderNumber = FIS.SalesOrderNumber;
+</code></pre>
+									<p style = "margin-bottom: 10px;">We have the following result:</p>
+									<img src="images/my/MBA/ordernum_prdkey.png" 
+											style="width:300px;
+													height:300px;
+													margin-left: 450px;
+													margin-bottom: 20px;"/>
+									<p>Notice that all the orders returned have more than 1 product key. Before seeing which combination of two products occurs most frequent, let’s use common table expression (CTE) to use this result for further uses.</p>
+									<hr />
+
+									<h3>3. Common Table Expression (CTE)</h3>
+									<pre><code>WITH Info AS
+(SELECT
+	OrderList.SalesOrderNumber,
+	FIS.ProductKey
+FROM
+	(SELECT
+		SalesOrderNumber,
+		COUNT(ProductKey) AS NumberofProducts
+	FROM FactInternetSales
+	GROUP BY SalesOrderNumber
+	HAVING COUNT(ProductKey) >= 2) AS OrderList
+JOIN FactInternetSales AS FIS ON Orderlist.SalesOrderNumber = FIS.SalesOrderNumber);
+</code></pre>
+									<hr>
+									<h3>4. Create combinations of two products in the same order</h3>
+									<pre><code>WITH Info AS
+(SELECT
+	OrderList.SalesOrderNumber,
+	FIS.ProductKey
+FROM
+	(SELECT
+		SalesOrderNumber,
+		COUNT(ProductKey) AS NumberofProducts
+	FROM FactInternetSales
+	GROUP BY SalesOrderNumber
+	HAVING COUNT(ProductKey) >= 2) AS OrderList
+JOIN FactInternetSales AS FIS ON Orderlist.SalesOrderNumber = FIS.SalesOrderNumber)
+
+SELECT 
+	Info1.SalesOrderNumber,
+	Info1.ProductKey AS Product1,
+	Info2.ProductKey AS Product2
+FROM Info AS Info1
+JOIN Info AS Info2 ON Info1.SalesOrderNumber = Info2.SalesOrderNumber
+WHERE Info1.ProductKey != Info2.ProductKey 
+  AND Info1.ProductKey < Info2.ProductKey;
+</code></pre>
+									<p>We self join the temporary “Info” table to view every 2 products that occur in the same order. Pay attention to the “WHERE” statement where we specify two conditions to avoid duplicates.
+										<ul>
+											<li><b>Info1.ProductKey != Info2.ProductKey</b></br>This is to make sure that the products we account for are different.</li>
+											<li><b>Info1.ProductKey < Info2.ProductKey</b></br>This is to avoid duplicates. If this condition does not exist, the result will be:</li>
+										</ul>
+									</p>
+									<img src="images/my/MBA/duplicate.png" 
+											style="width:300px;
+													height:300px;
+													margin-left: 450px;
+													margin-bottom: 20px;"/>
+									<p>Look at the first and the third record where <em>Product1</em> equals <em>Product2</em> and vice versa. This makes the result is twice as long as it should be. Therefore, removing duplicates by using second condition is a must.</p>
+									<p style = "margin-bottom: 10px;">This is the result without duplicates:</p>
+									<img src="images/my/MBA/without_duplicate.png" 
+											style="width:300px;
+													height:300px;
+													margin-left: 450px;
+													margin-bottom: 20px;"/>
+									<hr />
+
+									<h3>5. Calculate the frequency of a pair of two products</h3>
+									<pre><code>WITH Info AS
+(SELECT
+	OrderList.SalesOrderNumber,
+	FIS.ProductKey
+FROM
+	(SELECT
+		SalesOrderNumber,
+		COUNT(ProductKey) AS NumberofProducts
+	FROM FactInternetSales
+	GROUP BY SalesOrderNumber
+	HAVING COUNT(ProductKey) >= 2) AS OrderList
+JOIN FactInternetSales AS FIS ON Orderlist.SalesOrderNumber = FIS.SalesOrderNumber)
+
+SELECT
+	Info1.ProductKey AS Product1,
+	Info2.ProductKey AS Product2,
+	COUNT(*) AS Frequency
+FROM Info AS Info1
+JOIN Info AS Info2 ON Info1.SalesOrderNumber = Info2.SalesOrderNumber
+WHERE Info1.ProductKey != Info2.ProductKey 
+  AND Info1.ProductKey < Info2.ProductKey
+GROUP BY
+	Info1.ProductKey,
+	Info2.ProductKey
+ORDER BY COUNT(*);
+</code></pre>
+									<p style = "margin-bottom: 10px;">We have the following result:</p>
+									<img src="images/my/MBA/frequency.png" 
+											style="width:300px;
+													height:300px;
+													margin-left: 450px;"/>
+									<p>From the result, we can interpret that if a customer buys product 477, they are most likely to buy product 478 and 479. Therefore, recommending customers to buy these two products would be likely to improve sales revenue.</p>
+
+									<hr>
+									<h3>Conclusion</h3>
+									<p>MBA is an extremely powerful technique that a number of companies now are using to anticipate the interest of customers in order to suggest them the most relevant product besides what they chose to optimize the revenue. With only a few lines of code, SQL helps us to extract the data we need and make the right business decisions.</p>
+									<hr />
+
+									<h3>Reference</h3> 
+										<ul>
+											<li><a href = "https://www.youtube.com/watch?v=wSo-Cntp_rk">Product Association using SQL</a></li>
+											<li><a href = "https://www.analyticsvidhya.com/blog/2021/10/a-comprehensive-guide-on-market-basket-analysis/">A Comprehensive Guide on Market Basket Analysis</a></li>
+										</ul>
+										
+										<h3 style = "text-align: right;"><a href = "https://www.linkedin.com/in/thanh-cong-vuong/">Thanh Cong</a></h3>
+							</section>
+
+					</div>
+
+				<!-- Footer -->
+					<footer id="footer">
+						<section>
+							<form method="post" action="#">
+								<div class="fields">
+									<div class="field">
+										<label for="name">Name</label>
+										<input type="text" name="name" id="name" />
+									</div>
+									<div class="field">
+										<label for="email">Email</label>
+										<input type="text" name="email" id="email" />
+									</div>
+									<div class="field">
+										<label for="message">Message</label>
+										<textarea name="message" id="message" rows="3"></textarea>
+									</div>
+								</div>
+								<ul class="actions">
+									<li><input type="submit" value="Send Message" /></li>
+								</ul>
+							</form>
+						</section>
+						<section class="split contact">
+							<section class="alt">
+								<h3>Address</h3>
+								<p>Hanoi, Vietnam</p>
+							</section>
+							<section>
+								<h3>Phone</h3>
+								<p>0986 562 105</p>
+							</section>
+							<section>
+								<h3>Email</h3>
+								<p>thanhcongw2664@gmail.com</p>
+							</section>
+							<section>
+								<h3>Social</h3>
+								<ul class="icons alt">
+									<li><a href="https://www.linkedin.com/in/thanh-cong-vuong/" class="icon brands alt fa-linkedin"><span class="label">Linkedin</span></a></li>
+									<li><a href="https://www.kaggle.com/vthcong" class="icon brands alt fa-kaggle"><span class="label">Kaggle</span></a></li>
+									<li><a href="https://github.com/vthcong" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
+								</ul>
+							</section>
+						</section>
+					</footer>
+
+				<!-- Copyright -->
+					<div id="copyright">
+						<ul><li>THANH CONG</li></ul>
+					</div>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
