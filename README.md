@@ -1,1 +1,5 @@
-# Portfolio_Tran Tan Thinh
+# Portfolio website
+## Knowledge gained:
+Web deployment
+## Tools used:
+HTML, CSS, Javascript
